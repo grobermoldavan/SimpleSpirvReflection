@@ -3,9 +3,11 @@
 #include <stdlib.h>
 
 /*
+    SSR_DEFAULT_MEMORY_BLOCK_SIZE can be used to set memory allocation chunk size.
     If SSR_DIRTY_ALLOCATOR is defined, all allocated memory will be memzeroed before use.
     SSR_IMPL must be defined in order to create implementation.
 */
+#define SSR_DEFAULT_MEMORY_BLOCK_SIZE 256
 #define SSR_DIRTY_ALLOCATOR
 #define SSR_IMPL
 #include "../simple_spirv_reflection.h"
@@ -28,11 +30,13 @@ void* read_spirv(const char* path, size_t* sizeBytes)
 
 void* allocate_func(void* userData, size_t size)
 {
+    printf("Allocating %zd bytes from %s allocator\n", size, (const char*)userData);
     return malloc(size);
 }
 
 void free_func(void* userData, void* ptr, size_t size)
 {
+    printf("Freeing %zd bytes from %s allocator\n", size, (const char*)userData);
     free(ptr);
 }
 
@@ -82,9 +86,15 @@ int main(int argc, char* argv[])
     //
     // 2. Make an allocator for reflection system
     //
-    SsrAllocator allocator = (SsrAllocator)
+    SsrAllocator persistentAllocator = (SsrAllocator)
     {
-        .userData = NULL,
+        .userData = "persistent",
+        .alloc = allocate_func,
+        .free = free_func,
+    };
+    SsrAllocator nonPersistentAllocator = (SsrAllocator)
+    {
+        .userData = "non persistent",
         .alloc = allocate_func,
         .free = free_func,
     };
@@ -94,8 +104,8 @@ int main(int argc, char* argv[])
     SimpleSpirvReflection vertexReflection = {0};
     SsrCreateInfo vertexReflectionCreateInfo = (SsrCreateInfo)
     {
-        .persistentAllocator = &allocator,
-        .nonPersistentAllocator = &allocator,
+        .persistentAllocator = &persistentAllocator,
+        .nonPersistentAllocator = &nonPersistentAllocator,
         .bytecode = vertexShader,
         .bytecodeNumWords = vertexShaderSize / 4,
     };
@@ -103,8 +113,8 @@ int main(int argc, char* argv[])
     SimpleSpirvReflection fragmentReflection = {0};
     SsrCreateInfo fragmentReflectionCreateInfo = (SsrCreateInfo)
     {
-        .persistentAllocator = &allocator,
-        .nonPersistentAllocator = &allocator,
+        .persistentAllocator = &persistentAllocator,
+        .nonPersistentAllocator = &nonPersistentAllocator,
         .bytecode = fragmentShader,
         .bytecodeNumWords = fragmentShaderSize / 4,
     };

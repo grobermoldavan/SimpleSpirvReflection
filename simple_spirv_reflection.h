@@ -3,6 +3,10 @@
 #ifndef SIMPLE_SPRIV_REFLECTION_H
 #define SIMPLE_SPRIV_REFLECTION_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -141,6 +145,14 @@ typedef struct
     void  (*free)(void* userData, void* ptr, size_t size);
 } SsrAllocator;
 
+typedef struct SsrMemoryBlock
+{
+    void* base;
+    size_t capacity;
+    size_t size;
+    struct SsrMemoryBlock* next;
+} SsrMemoryBlock;
+
 typedef struct
 {
     SsrAllocator allocator;
@@ -161,6 +173,8 @@ typedef struct
     
     SsrUniform* uniforms;
     size_t numUniforms;
+
+    SsrMemoryBlock* memory;
     
 } SimpleSpirvReflection;
 
@@ -179,6 +193,10 @@ size_t ssr_get_type_size(SsrTypeInfo* typeInfo);
 const char* ssr_shader_type_to_str(SsrShader shader);
 const char* ssr_type_to_str(SsrType type);
 const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //SIMPLE_SPRIV_REFLECTION_H
 
@@ -230,6 +248,10 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
 #   define ssr_clear_mem(mem, size)
 #endif
 
+#ifndef SSR_DEFAULT_MEMORY_BLOCK_SIZE
+#   define SSR_DEFAULT_MEMORY_BLOCK_SIZE 4096
+#endif
+
 #define ssr_opcode(word) ((uint16_t)word)
 
 typedef enum
@@ -269,14 +291,55 @@ typedef struct
     size_t numMembers;
 } SsrSpirvStruct;
 
-char* __ssr_save_string(const char* str, SsrAllocator* allocator)
+SsrMemoryBlock* __ssr_alloc_single_block(size_t size, SsrAllocator* allocator)
+{
+    /*
+        By default memory is allocated in 4KB chunks.
+        If requested size is bigger, system will allocate memory of that size instead of default chunk size.
+    */
+    const size_t DEFAULT_BLOCK_SIZE = SSR_DEFAULT_MEMORY_BLOCK_SIZE - sizeof(SsrMemoryBlock); // Default memory size that is available to user in each memory block
+    const size_t memoryBlockCapacity = (size <= DEFAULT_BLOCK_SIZE ? DEFAULT_BLOCK_SIZE : size);
+    const size_t allocationSize = sizeof(SsrMemoryBlock) + memoryBlockCapacity;
+    SsrMemoryBlock* block = allocator->alloc(allocator->userData, allocationSize);
+    ssr_clear_mem(block, allocationSize);
+    block->base = ((char*)block) + sizeof(SsrMemoryBlock);
+    block->capacity = memoryBlockCapacity;
+    return block;
+}
+
+void* __ssr_alloc(size_t allocationSize, SimpleSpirvReflection* reflection)
+{
+    SsrMemoryBlock* block = reflection->memory;
+    SsrMemoryBlock* prevBlock = NULL;
+    for (; block; block = block->next)
+    {
+        if ((block->capacity - block->size) >= allocationSize)
+        {
+            break;
+        }
+        prevBlock = block;
+    }
+    if (!block)
+    {
+        block = __ssr_alloc_single_block(allocationSize, &reflection->allocator);
+        if (prevBlock)
+            prevBlock->next = block;
+        else
+            reflection->memory = block;
+    }
+    void* result = ((char*)block->base) + block->size;
+    block->size += allocationSize;
+    return result;
+}
+
+char* __ssr_save_string(const char* str, SimpleSpirvReflection* reflection)
 {
     if (!str)
     {
         return "";
     }
     size_t length = ssr_strlen(str);
-    char* result = allocator->alloc(allocator->userData, length + 1);
+    char* result = __ssr_alloc(length + 1, reflection);
     ssr_memcpy(result, str, length);
     result[length] = 0;
     return result;
@@ -433,16 +496,14 @@ SsrTypeInfo* __ssr_save_or_get_type_from_reflection(SsrSpirvStruct* structs, siz
             //
             if (!matchedType)
             {
-                resultType.info.structure.typeName = __ssr_save_string(spirvStruct->id->name, &reflection->allocator);
+                resultType.info.structure.typeName = __ssr_save_string(spirvStruct->id->name, reflection);
                 resultType.info.structure.numMembers = spirvStruct->numMembers;
-                resultType.info.structure.members = reflection->allocator.alloc(reflection->allocator.userData, sizeof(SsrTypeInfo*) * resultType.info.structure.numMembers);
-                ssr_clear_mem(resultType.info.structure.members, sizeof(SsrTypeInfo*) * resultType.info.structure.numMembers);
-                resultType.info.structure.memberNames = reflection->allocator.alloc(reflection->allocator.userData, sizeof(const char*) * resultType.info.structure.numMembers);
-                ssr_clear_mem((void*)resultType.info.structure.memberNames, sizeof(const char*) * resultType.info.structure.numMembers);
+                resultType.info.structure.members = __ssr_alloc(sizeof(SsrTypeInfo*) * resultType.info.structure.numMembers, reflection);
+                resultType.info.structure.memberNames = __ssr_alloc(sizeof(const char*) * resultType.info.structure.numMembers, reflection);
                 for (size_t memberIt = 0; memberIt < resultType.info.structure.numMembers; memberIt++)
                 {
                     resultType.info.structure.members[memberIt] = __ssr_save_or_get_type_from_reflection(structs, numStructs, ids, spirvStruct->members[memberIt].id, reflection);
-                    resultType.info.structure.memberNames[memberIt] = __ssr_save_string(spirvStruct->members[memberIt].name, &reflection->allocator);
+                    resultType.info.structure.memberNames[memberIt] = __ssr_save_string(spirvStruct->members[memberIt].name, reflection);
                 }
             }
         } break;
@@ -600,7 +661,7 @@ SsrTypeInfo* __ssr_save_or_get_type_from_reflection(SsrSpirvStruct* structs, siz
     //
     if (!matchedType)
     {
-        matchedType = reflection->allocator.alloc(reflection->allocator.userData, sizeof(SsrTypeInfo));
+        matchedType = __ssr_alloc(sizeof(SsrTypeInfo), reflection);
         ssr_memcpy(matchedType, &resultType, sizeof(SsrTypeInfo));
         if (reflection->typeInfos)
         {
@@ -618,7 +679,7 @@ SsrTypeInfo* __ssr_save_or_get_type_from_reflection(SsrSpirvStruct* structs, siz
 
 void __ssr_process_shader_io_variable(SsrSpirvStruct* structs, size_t numStructs, SsrSpirvId* ids, SsrSpirvId* ioDeclarationId, SimpleSpirvReflection* reflection, SsrShaderIO* io)
 {
-    io->name = __ssr_save_string(ioDeclarationId->name, &reflection->allocator);
+    io->name = __ssr_save_string(ioDeclarationId->name, reflection);
     io->location = ioDeclarationId->location;
     ssr_assert(ssr_opcode(ioDeclarationId->declarationLocation[0]) == SpvOpVariable);
     SsrSpirvId* id = &ids[ioDeclarationId->declarationLocation[1]];
@@ -644,7 +705,7 @@ void __ssr_process_shader_uniform(SsrSpirvStruct* structs, size_t numStructs, Ss
     ssr_assert(uniformIdOpVariable->name);
     ssr_assert(uniformIdOpVariable->decorations & SSR_DECORATION_SET);
     ssr_assert(uniformIdOpVariable->decorations & SSR_DECORATION_BINDING);
-    uniform->name = __ssr_save_string(uniformIdOpVariable->name, &reflection->allocator);
+    uniform->name = __ssr_save_string(uniformIdOpVariable->name, reflection);
     uniform->set = uniformIdOpVariable->set;
     uniform->binding = uniformIdOpVariable->binding;
     if (uniformIdOpVariable->decorations & SSR_DECORATION_INPUT_ATTACHMENT_INDEX)
@@ -752,7 +813,7 @@ void ssr_construct(SimpleSpirvReflection* reflection, SsrCreateInfo* createInfo)
                     reflection->type = SSR_SHADER_FRAGMENT;
                 else
                     ssr_assert(!"Only vertex and fragment shaders are supported");
-                reflection->entryPointName = __ssr_save_string((char*)&instruction[3], &reflection->allocator);
+                reflection->entryPointName = __ssr_save_string((char*)&instruction[3], reflection);
             } break;
             case SpvOpName:
             {
@@ -918,12 +979,9 @@ void ssr_construct(SimpleSpirvReflection* reflection, SsrCreateInfo* createInfo)
         }
         instruction += instructionWordCount;
     }
-    reflection->inputs = reflection->allocator.alloc(reflection->allocator.userData, sizeof(SsrShaderIO) * inputsCount);
-    reflection->outputs = reflection->allocator.alloc(reflection->allocator.userData, sizeof(SsrShaderIO) * outputsCount);
-    reflection->uniforms = reflection->allocator.alloc(reflection->allocator.userData, sizeof(SsrUniform) * uniformsCount);
-    ssr_clear_mem(reflection->inputs, sizeof(SsrShaderIO) * inputsCount);
-    ssr_clear_mem(reflection->outputs, sizeof(SsrShaderIO) * outputsCount);
-    ssr_clear_mem(reflection->uniforms, sizeof(SsrShaderIO) * uniformsCount);
+    reflection->inputs = __ssr_alloc(sizeof(SsrShaderIO) * inputsCount, reflection);
+    reflection->outputs = __ssr_alloc(sizeof(SsrShaderIO) * outputsCount, reflection);
+    reflection->uniforms = __ssr_alloc(sizeof(SsrUniform) * uniformsCount, reflection);
     //
     // Step 2. Retrieving information about shader structs
     //
@@ -1001,7 +1059,7 @@ void ssr_construct(SimpleSpirvReflection* reflection, SsrCreateInfo* createInfo)
             }
             else if (storageClass == SpvStorageClassPushConstant)
             {
-                reflection->pushConstantName = __ssr_save_string(id->name, &reflection->allocator);
+                reflection->pushConstantName = __ssr_save_string(id->name, reflection);
                 // Start from variable declaration
                 ssr_assert(ssr_opcode(id->declarationLocation[0]) == SpvOpVariable);
                 SsrSpirvId* localId = &ids[id->declarationLocation[1]];
@@ -1037,7 +1095,13 @@ void ssr_construct(SimpleSpirvReflection* reflection, SsrCreateInfo* createInfo)
 
 void ssr_destroy(SimpleSpirvReflection* reflection)
 {
-    // todo
+    SsrMemoryBlock* block = reflection->memory;
+    while (block)
+    {
+        SsrMemoryBlock* next = block->next;
+        reflection->allocator.free(reflection->allocator.userData, block, block->capacity + sizeof(SsrMemoryBlock));
+        block = next;
+    }
 }
 
 size_t ssr_get_type_size(SsrTypeInfo* typeInfo)
