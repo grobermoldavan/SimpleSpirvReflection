@@ -12,13 +12,13 @@ extern "C" {
 
 typedef uint32_t SsrSpirvWord;
 
-typedef enum
+typedef enum SsrShader
 {
     SSR_SHADER_VERTEX,
     SSR_SHADER_FRAGMENT,
 } SsrShader;
 
-typedef enum
+typedef enum SsrType
 {
     SSR_TYPE_SCALAR,
     SSR_TYPE_VECTOR,
@@ -29,7 +29,7 @@ typedef enum
     SSR_TYPE_ARRAY,
 } SsrType;
 
-typedef enum
+typedef enum SsrImageDim
 {
     SSR_IMAGE_1D,
     SSR_IMAGE_2D,
@@ -42,13 +42,13 @@ typedef enum
 
 #define SSR_IMAGE_PARAM_UNKNOWN (~((uint32_t)0))
 
-typedef enum
+typedef enum SsrImageDepthParameters
 {
     SSR_IMAGE_DEPTH,
     SSR_IMAGE_NOT_DEPTH,
 } SsrImageDepthParameters;
 
-typedef enum
+typedef enum SsrImageSampleParameters
 {
     SSR_IMAGE_USED_WITH_SAMPLER,
     SSR_IMAGE_NOT_USED_WITH_SAMPLER,
@@ -106,7 +106,7 @@ typedef struct SsrTypeInfo
     } info;
 } SsrTypeInfo;
 
-typedef struct
+typedef struct SsrShaderIO
 {
     const char* name;
     SsrTypeInfo* type;
@@ -114,7 +114,7 @@ typedef struct
     bool isBuiltIn;
 } SsrShaderIO;
 
-typedef enum
+typedef enum SsrUniformKind
 {
     SSR_UNIFORM_SAMPLER,
     SSR_UNIFORM_SAMPLED_IMAGE,
@@ -128,7 +128,7 @@ typedef enum
     SSR_UNIFORM_ACCELERATION_STRUCTURE,
 } SsrUniformKind;
 
-typedef struct
+typedef struct SsrUniform
 {
     const char* name;
     SsrTypeInfo* type;
@@ -138,7 +138,7 @@ typedef struct
     uint32_t inputAttachmentIndex;
 } SsrUniform;
 
-typedef struct
+typedef struct SsrAllocator
 {
     void* userData;
     void* (*alloc)(void* userData, size_t size);
@@ -153,7 +153,7 @@ typedef struct SsrMemoryBlock
     struct SsrMemoryBlock* next;
 } SsrMemoryBlock;
 
-typedef struct
+typedef struct SimpleSpirvReflection
 {
     SsrAllocator allocator;
     
@@ -178,7 +178,7 @@ typedef struct
     
 } SimpleSpirvReflection;
 
-typedef struct
+typedef struct SsrCreateInfo
 {
     SsrAllocator* persistentAllocator;
     SsrAllocator* nonPersistentAllocator;
@@ -201,6 +201,8 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
 #endif //SIMPLE_SPRIV_REFLECTION_H
 
 #ifdef SSR_IMPL
+#ifndef SSR_IMPL_INNER
+#define SSR_IMPL_INNER
 
 #include <spirv-headers/spirv.h>
 
@@ -254,7 +256,7 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
 
 #define ssr_opcode(word) ((uint16_t)word)
 
-typedef enum
+typedef enum SsrDecoration
 {
     SSR_DECORATION_BLOCK        = 0x00000001,
     SSR_DECORATION_BUFFER_BLOCK = 0x00000002,
@@ -266,7 +268,7 @@ typedef enum
     SSR_DECORATION_BUILT_IN     = 0x00000080,
 } SsrDecoration;
 
-typedef struct
+typedef struct SsrSpirvId
 {
     SsrSpirvWord* declarationLocation;
     const char* name;
@@ -278,13 +280,13 @@ typedef struct
     uint32_t inputAttachmentIndex;
 } SsrSpirvId;
 
-typedef struct
+typedef struct SsrSpirvStructMember
 {
     SsrSpirvId* id;
     const char* name;
 } SsrSpirvStructMember;
 
-typedef struct
+typedef struct SsrSpirvStruct
 {
     SsrSpirvId* id;
     SsrSpirvStructMember* members;
@@ -1191,4 +1193,5 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind)
 
 #undef ssr_opcode
 
+#endif //SSR_IMPL_INNER
 #endif //SSR_IMPL
