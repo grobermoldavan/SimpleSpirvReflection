@@ -1,0 +1,78 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 37
+; Schema: 0
+               OpCapability Shader
+               OpCapability InputAttachment
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %in_position %in_normal %in_uv %out_albedo %out_position %out_normal
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %in_position "in_position"
+               OpName %in_normal "in_normal"
+               OpName %in_uv "in_uv"
+               OpName %out_albedo "out_albedo"
+               OpName %out_position "out_position"
+               OpName %out_normal "out_normal"
+               OpName %testSubpassInput "testSubpassInput"
+               OpName %testSamplerArray "testSamplerArray"
+               OpName %testVerticesBuffer "testVerticesBuffer"
+               OpMemberName %testVerticesBuffer 0 "vertices"
+               OpName %inputGeometry "inputGeometry"
+               OpDecorate %in_position Location 0
+               OpDecorate %in_normal Location 1
+               OpDecorate %in_uv Location 2
+               OpDecorate %out_albedo Location 0
+               OpDecorate %out_position Location 1
+               OpDecorate %out_normal Location 2
+               OpDecorate %testSubpassInput DescriptorSet 0
+               OpDecorate %testSubpassInput Binding 1
+               OpDecorate %testSubpassInput InputAttachmentIndex 3
+               OpDecorate %testSamplerArray DescriptorSet 0
+               OpDecorate %testSamplerArray Binding 0
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpMemberDecorate %testVerticesBuffer 0 NonWritable
+               OpMemberDecorate %testVerticesBuffer 0 Offset 0
+               OpDecorate %testVerticesBuffer BufferBlock
+               OpDecorate %inputGeometry DescriptorSet 0
+               OpDecorate %inputGeometry Binding 2
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%in_position = OpVariable %_ptr_Input_v3float Input
+  %in_normal = OpVariable %_ptr_Input_v3float Input
+    %v2float = OpTypeVector %float 2
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+      %in_uv = OpVariable %_ptr_Input_v2float Input
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+ %out_albedo = OpVariable %_ptr_Output_v4float Output
+%_ptr_Output_v3float = OpTypePointer Output %v3float
+%out_position = OpVariable %_ptr_Output_v3float Output
+ %out_normal = OpVariable %_ptr_Output_v3float Output
+         %20 = OpTypeImage %float SubpassData 0 0 0 2 Unknown
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+%testSubpassInput = OpVariable %_ptr_UniformConstant_20 UniformConstant
+         %23 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %24 = OpTypeSampledImage %23
+       %uint = OpTypeInt 32 0
+    %uint_10 = OpConstant %uint 10
+%_arr_24_uint_10 = OpTypeArray %24 %uint_10
+%_ptr_UniformConstant__arr_24_uint_10 = OpTypePointer UniformConstant %_arr_24_uint_10
+%testSamplerArray = OpVariable %_ptr_UniformConstant__arr_24_uint_10 UniformConstant
+        %int = OpTypeInt 32 1
+%_runtimearr_int = OpTypeRuntimeArray %int
+%testVerticesBuffer = OpTypeStruct %_runtimearr_int
+   %uint_120 = OpConstant %uint 120
+%_arr_testVerticesBuffer_uint_120 = OpTypeArray %testVerticesBuffer %uint_120
+%_ptr_Uniform__arr_testVerticesBuffer_uint_120 = OpTypePointer Uniform %_arr_testVerticesBuffer_uint_120
+%inputGeometry = OpVariable %_ptr_Uniform__arr_testVerticesBuffer_uint_120 Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd

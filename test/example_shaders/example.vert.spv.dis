@@ -1,0 +1,114 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 43
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %_ %out_position %out_normal %out_uv
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %_ ""
+               OpName %out_position "out_position"
+               OpName %out_normal "out_normal"
+               OpName %out_uv "out_uv"
+               OpName %ViewProjection "ViewProjection"
+               OpMemberName %ViewProjection 0 "mat"
+               OpName %al_viewProjection "al_viewProjection"
+               OpName %InputGeometryVertex "InputGeometryVertex"
+               OpMemberName %InputGeometryVertex 0 "positionLS"
+               OpMemberName %InputGeometryVertex 1 "normalLS"
+               OpMemberName %InputGeometryVertex 2 "uv"
+               OpName %InputGeometry "InputGeometry"
+               OpMemberName %InputGeometry 0 "vertices"
+               OpName %al_inputGeometry "al_inputGeometry"
+               OpName %InputInstanceData "InputInstanceData"
+               OpMemberName %InputInstanceData 0 "transformWS"
+               OpName %InputInstances "InputInstances"
+               OpMemberName %InputInstances 0 "instanceData"
+               OpName %inputInstances "inputInstances"
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %out_position Location 0
+               OpDecorate %out_normal Location 1
+               OpDecorate %out_uv Location 2
+               OpMemberDecorate %ViewProjection 0 ColMajor
+               OpMemberDecorate %ViewProjection 0 Offset 0
+               OpMemberDecorate %ViewProjection 0 MatrixStride 16
+               OpDecorate %ViewProjection Block
+               OpDecorate %al_viewProjection DescriptorSet 0
+               OpDecorate %al_viewProjection Binding 0
+               OpMemberDecorate %InputGeometryVertex 0 Offset 0
+               OpMemberDecorate %InputGeometryVertex 1 Offset 16
+               OpMemberDecorate %InputGeometryVertex 2 Offset 32
+               OpDecorate %_runtimearr_InputGeometryVertex ArrayStride 48
+               OpMemberDecorate %InputGeometry 0 NonWritable
+               OpMemberDecorate %InputGeometry 0 Offset 0
+               OpDecorate %InputGeometry BufferBlock
+               OpDecorate %al_inputGeometry DescriptorSet 1
+               OpDecorate %al_inputGeometry Binding 0
+               OpMemberDecorate %InputInstanceData 0 ColMajor
+               OpMemberDecorate %InputInstanceData 0 Offset 0
+               OpMemberDecorate %InputInstanceData 0 MatrixStride 16
+               OpDecorate %_runtimearr_InputInstanceData ArrayStride 64
+               OpMemberDecorate %InputInstances 0 NonWritable
+               OpMemberDecorate %InputInstances 0 Offset 0
+               OpDecorate %InputInstances BufferBlock
+               OpDecorate %inputInstances DescriptorSet 1
+               OpDecorate %inputInstances Binding 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_0 = OpConstant %float 0
+         %17 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+    %v3float = OpTypeVector %float 3
+%_ptr_Output_v3float = OpTypePointer Output %v3float
+%out_position = OpVariable %_ptr_Output_v3float Output
+         %23 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+ %out_normal = OpVariable %_ptr_Output_v3float Output
+    %v2float = OpTypeVector %float 2
+%_ptr_Output_v2float = OpTypePointer Output %v2float
+     %out_uv = OpVariable %_ptr_Output_v2float Output
+         %28 = OpConstantComposite %v2float %float_0 %float_0
+%mat4v4float = OpTypeMatrix %v4float 4
+%ViewProjection = OpTypeStruct %mat4v4float
+%_ptr_Uniform_ViewProjection = OpTypePointer Uniform %ViewProjection
+%al_viewProjection = OpVariable %_ptr_Uniform_ViewProjection Uniform
+%InputGeometryVertex = OpTypeStruct %v3float %v3float %v2float
+%_runtimearr_InputGeometryVertex = OpTypeRuntimeArray %InputGeometryVertex
+%InputGeometry = OpTypeStruct %_runtimearr_InputGeometryVertex
+%_ptr_Uniform_InputGeometry = OpTypePointer Uniform %InputGeometry
+%al_inputGeometry = OpVariable %_ptr_Uniform_InputGeometry Uniform
+%InputInstanceData = OpTypeStruct %mat4v4float
+%_runtimearr_InputInstanceData = OpTypeRuntimeArray %InputInstanceData
+%InputInstances = OpTypeStruct %_runtimearr_InputInstanceData
+%_ptr_Uniform_InputInstances = OpTypePointer Uniform %InputInstances
+%inputInstances = OpVariable %_ptr_Uniform_InputInstances Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %19 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %19 %17
+               OpStore %out_position %23
+               OpStore %out_normal %23
+               OpStore %out_uv %28
+               OpReturn
+               OpFunctionEnd
