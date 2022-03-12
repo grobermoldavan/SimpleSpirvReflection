@@ -258,7 +258,6 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
 #define ssr_get_array_size_kind(typePtr)            (typePtr->info.array.sizeKind)
 #define ssr_get_array_size(typePtr)                 (typePtr->info.array.size)
 
-
 #ifdef __cplusplus
 }
 #endif
@@ -268,6 +267,10 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind);
 #ifdef SSR_IMPL
 #ifndef SSR_IMPL_INNER
 #define SSR_IMPL_INNER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <spirv-headers/spirv.h>
 
@@ -1427,6 +1430,10 @@ const char* ssr_uniform_kind_to_str(SsrUniformKind kind)
 }
 
 #undef ssr_opcode
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //SSR_IMPL_INNER
 #endif //SSR_IMPL
